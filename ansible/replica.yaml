@@ -1,0 +1,38 @@
+- hosts: replica
+  remote_user: ubuntu
+  become: true
+  gather_facts: yes
+  vars_files:
+    - vars/secrets
+  tasks:
+
+    - name: Make sure pymysql is present
+      pip:
+        name: pymysql
+        state: present
+
+    - name: Stopping replication
+      mysql_replication: 
+        mode: stopslave
+        login_user: root
+        login_password: ""
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Configure replication
+      mysql_replication:
+        mode: changemaster
+        login_user: root
+        login_password: ""
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        master_host: "{{ master_private_ip }}"
+        master_user: replica
+        master_password: "{{ mysql_root_password }}"
+        master_log_file: "{{ master_log_file }}"
+        master_log_pos: "{{ master_position }}"
+
+    - name: Starting replication
+      mysql_replication: 
+        mode: startslave
+        login_user: root
+        login_password: ""
+        login_unix_socket: /var/run/mysqld/mysqld.sock

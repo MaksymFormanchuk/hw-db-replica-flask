@@ -1,0 +1,72 @@
+- hosts: api_server
+  remote_user: ubuntu
+  become: true
+  gather_facts: yes
+
+  tasks:
+    - name: Updating packages
+      apt:
+        update_cache: yes
+        name: "*"
+        state: latest
+    
+    - name: Installing dependencies and git
+      apt:
+        pkg:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - htop
+          - git
+          - python3-pip
+          - python3-setuptools
+          - python3.8-venv 
+          - software-properties-common
+          - apt-transport-https
+      
+    - name: Adding ssh key for working with git
+      copy:
+        src: /home/max/.ssh/id_rsa
+        dest: /home/ubuntu/.ssh/id_rsa
+        owner: ubuntu
+        group: ubuntu
+        mode: 0600
+    
+    - name: Ensuring github.com is a known host
+      lineinfile:
+        dest: /home/ubuntu/.ssh/known_hosts
+        create: yes
+        state: present
+        line: "{{ lookup('pipe', 'ssh-keyscan -t rsa github.com') }}"
+        regexp: "^github\\.com"
+
+    - name: Cloning git repo
+      ansible.builtin.git:
+        repo: https://github.com/MaksymFormanchuk/hw-python-flask-api.git
+        dest: /home/ubuntu/hw-python-flask-api
+        clone: yes
+        update: yes
+    
+    - name: Copying ennvironment file
+      copy:
+        src: /home/max/api_env/.env
+        dest: /home/ubuntu/hw-python-flask-api/.env
+
+    - name: Adding percona repo
+      apt:
+        deb: "https://repo.percona.com/apt/percona-release_latest.{{ ansible_distribution_release }}_all.deb"
+
+    - name: Setting percona dist
+      shell: percona-release setup ps80
+
+    - name: Installing percona
+      apt: name=percona-server-server state=present update_cache=yes
+
+    - name: Copying api startup script
+      copy:
+        src: /home/max/hw-db-replica-flask/script2.sh
+        dest: /home/ubuntu/hw-python-flask-api/script2.sh
+
+    - name: Executing the startup script 
+      shell: bash /home/ubuntu/hw-python-flask-api/script2.sh

@@ -1,0 +1,9 @@
+IP
+IP_addr
+terraform/terraform.tfstate
+terraform/terraform.code-workspace
+terraform/terraform.tfstate.backup
+.terraform.lock.hcl
+.terraform
+ansible/vars
+mysql-commands.txt

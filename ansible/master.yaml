@@ -1,0 +1,41 @@
+- hosts: master
+  remote_user: ubuntu
+  become: true
+  gather_facts: yes
+  vars_files:
+    - vars/secrets
+  tasks:
+
+    - name: Make sure pymysql is present
+      pip:
+        name: pymysql
+        state: present
+
+    - name: Mysql user setup for replication
+      mysql_user:
+        name: replica
+        host: "172.31.%.%"
+        password: "{{ mysql_root_password }}"
+        login_user: root
+        login_password: ""
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        check_implicit_admin: yes
+        priv: "*.*:REPLICATION SLAVE"
+
+    - name: Check master status
+      mysql_replication:
+        mode: getprimary
+        login_user: root
+        login_password: ""
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Mysql user setup for api connection
+      mysql_user:
+        name: devops
+        host: "172.31.%.%"
+        password: "{{ mysql_root_password }}"
+        login_user: root
+        login_password: ""
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        check_implicit_admin: yes
+        priv: "*.*:ALL"

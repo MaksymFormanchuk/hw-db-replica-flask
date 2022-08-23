@@ -1,0 +1,49 @@
+- hosts: db_servers
+  remote_user: ubuntu
+  become: true
+  gather_facts: yes
+
+  tasks:
+    - name: Updating packages
+      apt:
+        update_cache: yes
+        name: "*"
+        state: latest
+
+    - name: change hostname
+      hostname: 
+        name: "{{ inventory_hostname }}"
+    
+    - name: Installing dependencies and git
+      apt:
+        pkg:
+          - ca-certificates
+          - curl
+          - gnupg2
+          - lsb-release
+          - htop
+          - python3-pip
+          - python3-setuptools
+    
+    - name: add percona repo
+      apt:
+        deb: "https://repo.percona.com/apt/percona-release_latest.{{ ansible_distribution_release }}_all.deb"
+
+    - name: set percona dist
+      shell: percona-release setup ps80
+
+    - name: install percona
+      apt: name=percona-server-server state=present update_cache=yes
+
+    - name: Copy conf file
+      template:
+        src: templates/mysqld.cnf.j2
+        dest: /etc/mysql/mysql.conf.d/mysqld.cnf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Restart DB
+      systemd:
+        name: mysql
+        state: restarted

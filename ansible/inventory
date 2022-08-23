@@ -1,0 +1,8 @@
+[api_server]
+flask ansible_host=
+
+
+[db_servers]
+master   ansible_host=    private_ip=   server_id=101
+replica  ansible_host=   private_ip=    server_id=102
+
